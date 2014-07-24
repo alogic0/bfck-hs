@@ -37,3 +37,16 @@ jmpToL' n zl@(Zip l1 l2) =
  
 jmpToL zl = jmpToL' 0 zl
 
+
+jmpToR' n zl@(Zip l1 l2) =
+  let zl1 = mvRght zl
+  in
+  case l2 of
+    [] -> error "No matched ] found"
+    ('[' : _) -> jmpToR' (n+1) zl1
+    (']' : _) -> if n == 0
+                   then zl1
+                   else jmpToR' (n-1) zl1
+    _ -> jmpToR' n zl1
+ 
+jmpToR zl = jmpToR' 0 zl
