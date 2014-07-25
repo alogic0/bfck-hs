@@ -1,6 +1,7 @@
 module Bf where
 
 import Control.Monad.State
+import Data.Char
 
 data Zip a = Zip [a] [a] 
 type Arr = Zip Integer
