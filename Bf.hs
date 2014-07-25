@@ -2,6 +2,7 @@ module Bf where
 
 import Control.Monad.State
 import Data.Char
+import System.Environment
 
 data Zip a = Zip [a] [a] 
 type Arr = Zip Char
@@ -54,43 +55,54 @@ jmpToR zl = jmpToR' 0 zl
 
 endP (Zip l1 l2) = (null l1) || (null l2)
 
-code :: StateT (Prog, Arr) IO ()
-code = do (p@(Zip p1 p2), ar@(Zip ar1 ar2)) <- get
+bfEx :: StateT (Prog, Arr) IO ()
+bfEx = do (p@(Zip p1 p2), ar@(Zip ar1 ar2)) <- get
           if (null p2)           -- || length p1 == 50
             then return ()
-            else
+            else do
               let pn = mvRght p
-              in
               case (head p2) of
-                '<' -> do put (pn, mvLft ar)
---                          code
-                '>' -> do put (pn, mvRght ar)
---                          code
+                '<' -> put (pn, mvLft ar)
+                '>' -> put (pn, mvRght ar)
                 '+' -> let (h:ar3) = ar2
-                           h3 = chr $ mod (ord h + 1) 128 
-                       in do put (pn, Zip ar1 (h3:ar3))
---                             code
+                           h3 = chr $ mod (ord h + 1) 256 
+                       in put (pn, Zip ar1 (h3:ar3))
                 '-' -> let (h:ar3) = ar2
-                           h3 = chr $ mod (ord h - 1 + 128) 128 
-                       in do put (pn, Zip ar1 (h3:ar3))
---                             code
+                           h3 = chr $ mod (ord h - 1 + 256) 256 
+                       in put (pn, Zip ar1 (h3:ar3))
                 '.' -> let (h:ar3) = ar2
                        in do liftIO $ putChar h
                              put (pn, ar)
---                             code
                 ',' -> let (_:ar3) = ar2
                        in do h3 <- liftIO $ getChar
                              put (pn, Zip ar1 (h3:ar3))
---                             code
                 '[' -> let p3 = if (ord $ head ar2) == 0
                                 then mvRght $ jmpToR p
                                 else pn
-                       in do put (p3, ar)
---                             code
+                       in put (p3, ar)
                 ']' -> let p3 = if (ord $ head ar2) /= 0
                                 then mvRght $ jmpToL p
                                 else pn
-                       in do put (p3, ar)
---                             code
-                _ -> do put (pn, ar)
---                        code
+                       in put (p3, ar)
+                _ -> put (pn, ar)
+              bfEx
+
+main :: IO ()
+main = do
+  args <- getArgs
+  name <- getProgName
+  let usage = "Usage: "++name++" <brainfuck_file>"
+  if null args || (head.head) args == '-'
+  then putStrLn usage
+  else do
+    p11 <- readFile $ head args
+    let p1 = filter (\x -> elem x ".,<>+-[]") p11
+    putStrLn "Program is running..."
+    putStrLn "Output:"
+    p2 <- runStateT bfEx (toZip "" p1 , toZip "" (replicate 30000 (chr 0)))
+    let (q1,Zip q21 q22) = snd p2
+    putStrLn "\nYour program:"
+    print q1
+    putStrLn "\nMewory array (first 200 bytes if long):"
+    let q223 = reverse $ dropWhile (== 0) $ reverse (map ord q22)
+    print (Zip (take 100 (map ord q21)) (take 100 q223))
