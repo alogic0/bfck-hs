@@ -1,4 +1,4 @@
-module Bf where
+module Main where
 
 import Control.Monad.State
 import Data.Char
